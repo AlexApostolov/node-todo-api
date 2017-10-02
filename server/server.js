@@ -27,6 +27,8 @@ app.post('/todos', (req, res) => {
 app.listen(3000, () => {
   console.log('Started on port 3000');
 });
+
+module.exports = { app };
 // Run Todo model as a constructor function to create a todo instance.
 // Mongoose will automatically lowercase & pluralize Todo => todos as a collection name
 // var newTodo = new Todo({
