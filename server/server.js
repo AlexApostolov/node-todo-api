@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongodb');
@@ -75,6 +76,44 @@ app.delete('/todos/:id', (req, res) => {
       res.send({ todo });
     })
     // error: 400 with empty body
+    .catch(e => {
+      res.status(400).send();
+    });
+});
+
+app.patch('/todos/:id', (req, res) => {
+  const id = req.params.id;
+  // The request updates are going to be stored in the body, but the user could send any property to be updated
+  // Lodash's pick method allows us to select which properties the user may update
+  // .pick takes an object, and then an array of properties you want to pull off if they exist
+  const body = _.pick(req.body, ['text', 'completed']);
+
+  if (!ObjectID.isValid(id)) {
+    return res.status(404).send();
+  }
+
+  // Check "completed" value and use it to set "completedAt"
+  // If user is setting completed to true we want to set a time stamp, if false clear time stamp
+  if (_.isBoolean(body.completed) && body.completed) {
+    // Set time to number of ms since 1970
+    body.completedAt = new Date().getTime();
+  } else {
+    body.completed = false;
+    // Remove from DB
+    body.completedAt = null;
+  }
+
+  // Query to update DB with ID and set the values using a MongoDB operator
+  // with the object already generated with key/values as "body" above
+  // and the 3rd arg lets you tweak the options of the function to return the new object--not old.
+  Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+    .then(todo => {
+      if (!todo) {
+        return res.status(404).send();
+      }
+
+      res.send({ todo });
+    })
     .catch(e => {
       res.status(400).send();
     });
