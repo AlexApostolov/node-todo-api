@@ -16,7 +16,7 @@ const port = process.env.PORT;
 app.use(bodyParser.json());
 
 app.post('/todos', (req, res) => {
-  let todo = new Todo({
+  const todo = new Todo({
     text: req.body.text
   });
   todo.save().then(
@@ -118,6 +118,29 @@ app.patch('/todos/:id', (req, res) => {
     })
     .catch(e => {
       res.status(400).send();
+    });
+});
+
+// POST /users
+app.post('/users', (req, res) => {
+  // Users will not be able to manipulate tokens or anything else other than email & password
+  const body = _.pick(req.body, ['email', 'password']);
+  // Here body is already only email and password, no need for key/value pairs
+  const user = new User(body);
+
+  user
+    .save()
+    // Now that user is saved, save a token to the user
+    .then(() => {
+      // Instead of responding with "res.send(user);" call with a chaining promise
+      return user.generateAuthToken();
+    })
+    // Use returned generated token and send custom header, i.e. key of "x-auth" and value of "token"
+    .then(token => {
+      res.header('x-auth', token).send(user);
+    })
+    .catch(e => {
+      res.status(400).send(e);
     });
 });
 
