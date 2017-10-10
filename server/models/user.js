@@ -73,6 +73,31 @@ UserSchema.methods.generateAuthToken = function() {
   });
 };
 
+// .statics is an object like .methods, but everything you add to it turns into a model method
+// instead of an instance method. We'll need "this" bound, so a regular function.
+UserSchema.statics.findByToken = function(token) {
+  const User = this;
+  // If anything goes wrong, e.g. secret doesn't match, jwt.verify() will throw an error
+  let decoded;
+  try {
+    // Has the JWT token been tampered with?
+    decoded = jwt.verify(token, 'abc123');
+  } catch (e) {
+    // Don't continue, reject since verification failed
+    // return new Promise((resolve, reject) => reject()); OR SIMPLER BELOW
+    return Promise.reject();
+  }
+  // Success case for decoding what's in the header, query the associated user if any
+  return User.findOne({
+    _id: decoded._id,
+    // NOTE: quotes are required when you have a dot
+    // Check that the user is still active and not logged out
+    'tokens.token': token,
+    // tokens.access is reusable, with other access values like charable urls or email reset tokens
+    'tokens.access': 'auth'
+  });
+};
+
 const User = mongoose.model('User', UserSchema);
 
 module.exports = { User };

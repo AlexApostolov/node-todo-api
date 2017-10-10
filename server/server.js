@@ -144,6 +144,24 @@ app.post('/users', (req, res) => {
     });
 });
 
+app.get('/users/me', (req, res) => {
+  const token = req.header('x-auth');
+  User.findByToken(token)
+    .then(user => {
+      if (!user) {
+        // For some reason there's a valid token, but a user could not be found matching the parameters specified
+        return Promise.reject();
+        // Now it will run the catch sending back a status of 401
+      }
+
+      res.send(user);
+    })
+    .catch(e => {
+      // Didn't authenticate correctly
+      res.status(401).send();
+    });
+});
+
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
 });
