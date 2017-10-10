@@ -8,6 +8,7 @@ const { ObjectID } = require('mongodb');
 const { mongoose } = require('./db/mongoose');
 const { Todo } = require('./models/todo');
 const { User } = require('./models/user');
+const { authenticate } = require('./middleware/authenticate');
 
 const app = express();
 const port = process.env.PORT;
@@ -144,22 +145,9 @@ app.post('/users', (req, res) => {
     });
 });
 
-app.get('/users/me', (req, res) => {
-  const token = req.header('x-auth');
-  User.findByToken(token)
-    .then(user => {
-      if (!user) {
-        // For some reason there's a valid token, but a user could not be found matching the parameters specified
-        return Promise.reject();
-        // Now it will run the catch sending back a status of 401
-      }
-
-      res.send(user);
-    })
-    .catch(e => {
-      // Didn't authenticate correctly
-      res.status(401).send();
-    });
+app.get('/users/me', authenticate, (req, res) => {
+  // req.user has been modified by the "authenticate" middleware
+  res.send(req.user);
 });
 
 app.listen(port, () => {
