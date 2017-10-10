@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+// bcrypt is a one-way hashing algorithm (can't get original value back) that salts automatically
+const bcrypt = require('bcryptjs');
 
 const UserSchema = new mongoose.Schema({
   email: {
@@ -76,6 +78,7 @@ UserSchema.methods.generateAuthToken = function() {
 // .statics is an object like .methods, but everything you add to it turns into a model method
 // instead of an instance method. We'll need "this" bound, so a regular function.
 UserSchema.statics.findByToken = function(token) {
+  // Reference to specific model: User
   const User = this;
   // If anything goes wrong, e.g. secret doesn't match, jwt.verify() will throw an error
   let decoded;
@@ -93,10 +96,34 @@ UserSchema.statics.findByToken = function(token) {
     // NOTE: quotes are required when you have a dot
     // Check that the user is still active and not logged out
     'tokens.token': token,
-    // tokens.access is reusable, with other access values like charable urls or email reset tokens
+    // tokens.access is reusable, with other access values like sharable urls or email reset tokens
     'tokens.access': 'auth'
   });
 };
+
+// Mongoose document middleware (also called pre and post hooks) are functions which are passed control
+// during execution of asynchronous functions. Middleware is specified on the schema level.
+// Pre hook before the save event needs "this" bound and "next" provided
+UserSchema.pre('save', function(next) {
+  // Reference to specific user
+  const user = this;
+
+  // Check if user changed password when updating document or kept the old one
+  if (user.isModified('password')) {
+    // Salt the password with genSalt and 1st pass it the number of rounds to use, the higher the slower, e.g. 120
+    // Slower is good, because it reduces hackers ability of brute forcing these calls
+    // 2nd arg is a callback
+    bcrypt.genSalt(10, (err, salt) => {
+      bcrypt.hash(user.password, salt, (err, hash) => {
+        // Update user document by overriding the plain text password with the hash
+        user.password = hash;
+        next();
+      });
+    });
+  } else {
+    next();
+  }
+});
 
 const User = mongoose.model('User', UserSchema);
 

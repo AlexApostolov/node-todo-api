@@ -1,4 +1,26 @@
-// const { SHA256 } = require('crypto-js');
+const { SHA256 } = require('crypto-js');
+// bcryp salts automatically and hashes our passwords for us
+const bcrypt = require('bcryptjs');
+
+var password = '123abc!';
+// // Salt the password with genSalt and 1st pass it the number of rounds to use, the higher the slower, e.g. 120
+// // Slower is good, because it reduces hackers ability of brute forcing these calls
+// // 2nd arg is a callback
+// bcrypt.genSalt(10, (err, salt) => {
+//   // Do hashing
+//   bcrypt.hash(password, salt, (err, hash) => {
+//     console.log(hash);
+//   });
+// });
+
+var hashedPassword =
+  '$2a$10$q/JAJ6GGclrUnhR46ndoWe1vSXXYOulSyMUOtd4C4gy6LI2BZOxki';
+
+// Take string of hashed value to compare against
+bcrypt.compare(password, hashedPassword, (err, res) => {
+  console.log(res);
+});
+
 //
 // let message = 'I am user number 3';
 // const hash = SHA256(message).toString();
