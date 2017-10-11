@@ -299,3 +299,26 @@ describe('POST /users/login', () => {
       });
   });
 });
+
+describe('DELETE /users/me/token', () => {
+  it('should remove auth token on logout', done => {
+    request(app)
+      .delete('/users/me/token')
+      .set({ 'x-auth': users[0].tokens[0].token })
+      .expect(200)
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        /* NOTE: assuming test is for one device with only an auth token, additional tokens would break test,
+        in which case findByToken would be a better approach */
+        User.findById(users[0]._id)
+          .then(user => {
+            expect(user.tokens.length).toBe(0);
+            done();
+          })
+          .catch(e => done(e));
+      });
+  });
+});
