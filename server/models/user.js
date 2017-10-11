@@ -39,6 +39,8 @@ const UserSchema = new mongoose.Schema({
   ]
 });
 
+/* Mongoose "statics" are methods available on the capital-letter model. Mongoose "methods" are methods available on the instance of the model. */
+
 // Override the toJSON method to limit the data that comes back to the user
 // when a mongoose model is converted into a JSON value
 UserSchema.methods.toJSON = function() {
@@ -72,6 +74,20 @@ UserSchema.methods.generateAuthToken = function() {
   // so later on the token can be grabbed in server.js by tacking on another .then callback
   return user.save().then(() => {
     return token;
+  });
+};
+
+UserSchema.methods.removeToken = function(token) {
+  // Remove any tokens array object that matches certain criteria
+  const user = this;
+
+  // We already have the user, so just pass the "pull" operator inside an update object
+  return user.update({
+    // Define what to pull from--remove from an existing array all instances of a value/values
+    $pull: {
+      // Remove entire object matching the token passed in above
+      tokens: { token }
+    }
   });
 };
 

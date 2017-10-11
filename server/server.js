@@ -167,6 +167,19 @@ app.post('/users/login', (req, res) => {
     });
 });
 
+// Private route--logged in--to delete user token for endpoint device
+app.delete('/users/me/token', authenticate, (req, res) => {
+  // Call instance method
+  req.user.removeToken(req.token).then(
+    () => {
+      res.status(200).send();
+    },
+    () => {
+      res.status(400).send();
+    }
+  );
+});
+
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
 });
