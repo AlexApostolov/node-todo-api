@@ -101,6 +101,35 @@ UserSchema.statics.findByToken = function(token) {
   });
 };
 
+// When user wishes to login, verify that user exists with that email, then compare passwords
+// We need access to "this" binding, so function keyword used
+UserSchema.statics.findByCredentials = function(email, password) {
+  const User = this;
+
+  // Since we don't have the password hashed, search by the email property
+  // Chain promise, because of the then call and catch call in server.js
+  return User.findOne({ email }).then(user => {
+    if (!user) {
+      // This will automatically return the catch case in server.js
+      return Promise.reject();
+    }
+
+    // bcrypt only supports callbacks [in this version]
+    return new Promise((resolve, reject) => {
+      // Compare password passed to findByCredentials with the persisted user.password property
+      // bcrypt.compare
+      bcrypt.compare(password, user.password, (err, res) => {
+        if (res) {
+          // If successful, then we can do stuff with the user back in server.js
+          resolve(user);
+        } else {
+          reject();
+        }
+      });
+    });
+  });
+};
+
 // Mongoose document middleware (also called pre and post hooks) are functions which are passed control
 // during execution of asynchronous functions. Middleware is specified on the schema level.
 // Pre hook before the save event needs "this" bound and "next" provided

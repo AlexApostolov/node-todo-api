@@ -150,6 +150,24 @@ app.get('/users/me', authenticate, (req, res) => {
   res.send(req.user);
 });
 
+// POST /users/login {email, password}
+app.post('/users/login', (req, res) => {
+  const body = _.pick(req.body, ['email', 'password']);
+
+  // If successful, should get user back
+  User.findByCredentials(body.email, body.password)
+    .then(user => {
+      // If no user, findByCredentials will trigger the catch case below
+      // Use the reusable method generateAuthToken to create a new token--return it to keep the chain alive
+      return user.generateAuthToken().then(token => {
+        res.header('x-auth', token).send(user);
+      });
+    })
+    .catch(e => {
+      res.status(400).send();
+    });
+});
+
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
 });
