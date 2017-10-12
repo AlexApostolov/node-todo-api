@@ -16,9 +16,11 @@ const port = process.env.PORT;
 // Call the body parser middleware function to return JSON data to Express
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
+app.post('/todos', authenticate, (req, res) => {
   const todo = new Todo({
-    text: req.body.text
+    text: req.body.text,
+    // req.user provided by "authenticate"
+    _creator: req.user._id
   });
   todo.save().then(
     doc => {
@@ -30,9 +32,11 @@ app.post('/todos', (req, res) => {
   );
 });
 
-app.get('/todos', (req, res) => {
-  // Get all todos
-  Todo.find().then(
+app.get('/todos', authenticate, (req, res) => {
+  // Get todos by a particular authenticated user
+  Todo.find({
+    _creator: req.user._id
+  }).then(
     todos => {
       res.send({ todos });
     },
@@ -42,7 +46,7 @@ app.get('/todos', (req, res) => {
   );
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
   // Pull id dynamically off of url
   const id = req.params.id;
   // Validate id
@@ -50,7 +54,12 @@ app.get('/todos/:id', (req, res) => {
     return res.status(404).send();
   }
 
-  Todo.findById(id)
+  // findOne instead of findById, since we don't want User B--logged in--accessing a User A's todo
+  // by passing an ID
+  Todo.findOne({
+    _id: id,
+    _creator: req.user._id
+  })
     .then(todo => {
       if (!todo) {
         return res.status(404).send();
@@ -62,15 +71,17 @@ app.get('/todos/:id', (req, res) => {
     });
 });
 
-app.delete('/todos/:id', (req, res) => {
-  // get the id
+app.delete('/todos/:id', authenticate, (req, res) => {
   const id = req.params.id;
   // validate the id -> not valid? return 404
   if (!ObjectID.isValid(id)) {
     return res.status(404).send();
   }
-  // remove todo by id
-  Todo.findByIdAndRemove(id)
+  // Remove by _creator instead of only by ID
+  Todo.findOneAndRemove({
+    _id: id,
+    _creator: req.user._id
+  })
     .then(todo => {
       // success: if no doc, send 404, if doc, send doc back with 200
       if (!todo) {
@@ -84,7 +95,7 @@ app.delete('/todos/:id', (req, res) => {
     });
 });
 
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
   const id = req.params.id;
   // The request updates are going to be stored in the body, but the user could send any property to be updated
   // Lodash's pick method allows us to select which properties the user may update
@@ -109,7 +120,11 @@ app.patch('/todos/:id', (req, res) => {
   // Query to update DB with ID and set the values using a MongoDB operator
   // with the object already generated with key/values as "body" above
   // and the 3rd arg lets you tweak the options of the function to return the new object--not old.
-  Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+  Todo.findOneAndUpdate(
+    { _id: id, _creator: req.user._id },
+    { $set: body },
+    { new: true }
+  )
     .then(todo => {
       if (!todo) {
         return res.status(404).send();
@@ -122,7 +137,6 @@ app.patch('/todos/:id', (req, res) => {
     });
 });
 
-// POST /users
 app.post('/users', (req, res) => {
   // Users will not be able to manipulate tokens or anything else other than email & password
   const body = _.pick(req.body, ['email', 'password']);
