@@ -40,7 +40,7 @@ const todos = [
   {
     _id: new ObjectID(),
     text: 'Second test todo',
-    creator: userTwoId,
+    _creator: userTwoId,
     completed: true,
     completedAt: 1507073237942
   }
