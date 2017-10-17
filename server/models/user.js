@@ -63,7 +63,7 @@ UserSchema.methods.generateAuthToken = function() {
   // Create a hash and pass a data object to be signed, and a secret to salt the hash
   const token = jwt
     // The data ObjectID is passed as a string value using toHexString MongoDB method, & 'auth' property value
-    .sign({ _id: user._id.toHexString(), access }, 'abc123');
+    .sign({ _id: user._id.toHexString(), access }, process.env.JWT_SECRET);
   // Get back string token with .toString(); chained on isn't necessary here because jwt.sign does that for us
 
   // tokens is an empty array by default, so update the local user model
@@ -100,7 +100,7 @@ UserSchema.statics.findByToken = function(token) {
   let decoded;
   try {
     // Has the JWT token been tampered with?
-    decoded = jwt.verify(token, 'abc123');
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch (e) {
     // Don't continue, reject since verification failed
     // return new Promise((resolve, reject) => reject()); OR SIMPLER BELOW
