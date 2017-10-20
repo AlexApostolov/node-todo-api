@@ -128,7 +128,7 @@ describe('DELETE /todos/:id', () => {
 
         Todo.findById(hexId)
           .then(todo => {
-            expect(todo).toNotExist();
+            expect(todo).toBeFalsy();
             done();
           })
           .catch(e => done(e));
@@ -151,7 +151,7 @@ describe('DELETE /todos/:id', () => {
         Todo.findById(hexId)
           .then(todo => {
             // The deletion should never have happened
-            expect(todo).toExist();
+            expect(todo).toBeTruthy();
             done();
           })
           .catch(e => done(e));
@@ -193,7 +193,7 @@ describe('PATCH /todos/:id', () => {
       .expect(res => {
         expect(res.body.todo.text).toBe(text);
         expect(res.body.todo.completed).toBe(true);
-        expect(res.body.todo.completedAt).toBeA('number');
+        expect(typeof res.body.todo.completedAt).toBe('number');
       })
       .end(done);
   });
@@ -230,7 +230,7 @@ describe('PATCH /todos/:id', () => {
       .expect(res => {
         expect(res.body.todo.text).toBe(text);
         expect(res.body.todo.completed).toBe(false);
-        expect(res.body.todo.completedAt).toNotExist();
+        expect(res.body.todo.completedAt).toBeFalsy();
       })
       .end(done);
   });
@@ -270,8 +270,8 @@ describe('POST /users', () => {
       .expect(200)
       .expect(res => {
         // Use bracket notation because of the hyphen in x-auth
-        expect(res.headers['x-auth']).toExist();
-        expect(res.body._id).toExist();
+        expect(res.headers['x-auth']).toBeTruthy();
+        expect(res.body._id).toBeTruthy();
         expect(res.body.email).toBe(email);
       }) // Query the DB too, instead of just passing in "done"
       .end(err => {
@@ -281,9 +281,9 @@ describe('POST /users', () => {
         // Find a user where the email equals the email above
         User.findOne({ email })
           .then(user => {
-            expect(user).toExist();
+            expect(user).toBeTruthy();
             // Expect that the password does NOT match since it has NOT been hashed
-            expect(user.password).toNotBe(password);
+            expect(user.password).not.toBe(password);
             done();
           }) // Get a useful error message for which assertion failed & why, instead of just timing out
           .catch(e => done(e));
@@ -314,7 +314,7 @@ describe('POST /users/login', () => {
       .send({ email: users[1].email, password: users[1].password })
       .expect(200)
       .expect(res => {
-        expect(res.headers['x-auth']).toExist();
+        expect(res.headers['x-auth']).toBeTruthy();
       })
       .end((err, res) => {
         if (err) {
@@ -323,7 +323,10 @@ describe('POST /users/login', () => {
 
         User.findById(users[1]._id)
           .then(user => {
-            expect(user.tokens[1]).toInclude({
+            // v1 expect library was able to parse out mongoose stuff on "user", unlike modern version
+            // So use toObject mongoose method, returns raw user data without internal mongoose methods present,
+            // then toMatchObject compares properties of both objects
+            expect(user.toObject().tokens[1]).toMatchObject({
               access: 'auth',
               token: res.headers['x-auth']
             });
@@ -339,7 +342,7 @@ describe('POST /users/login', () => {
       .send({ email: users[1].email, password: 'smellOfFailure' })
       .expect(400)
       .expect(res => {
-        expect(res.headers['x-auth']).toNotExist();
+        expect(res.headers['x-auth']).toBeFalsy();
       })
       .end((err, res) => {
         if (err) {
