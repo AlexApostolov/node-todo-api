@@ -112,6 +112,30 @@ describe('GET /todos/:id', () => {
 
 describe('DELETE /todos/:id', () => {
   it('should remove a todo', done => {
+    let hexId = todos[1]._id.toHexString();
+
+    request(app)
+      .delete(`/todos/${hexId}`)
+      .set('x-auth', users[1].tokens[0].token)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo._id).toBe(hexId);
+      })
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        Todo.findById(hexId)
+          .then(todo => {
+            expect(todo).toNotExist();
+            done();
+          })
+          .catch(e => done(e));
+      });
+  });
+
+  it('should not remove a todo by another user', done => {
     let hexId = todos[0]._id.toHexString();
 
     request(app)
@@ -156,7 +180,7 @@ describe('PATCH /todos/:id', () => {
   it('should update the todo', done => {
     // Grab id of first item
     let hexId = todos[0]._id.toHexString();
-    // Update the text, set completed to true
+    // Update the text as authenticated first user, set completed to true
     let text = 'This text has been updated!';
     request(app)
       .patch(`/todos/${hexId}`)
@@ -177,7 +201,7 @@ describe('PATCH /todos/:id', () => {
   it('should not update the todo created by other user', done => {
     // Grab id of first item
     let hexId = todos[0]._id.toHexString();
-    // Update the text, set completed to true
+    // Update the text authenticated as second user, set completed to true
     let text = 'This text has been updated!';
     request(app)
       .patch(`/todos/${hexId}`)
