@@ -194,6 +194,16 @@ app.delete('/users/me/token', authenticate, (req, res) => {
   );
 });
 
+app.delete('/users/me/account', authenticate, (req, res) => {
+  // req.user & req.token provided by "authenticate"
+  const user = req.user;
+  const token = req.token;
+
+  User.findOneAndRemove({ _id: user._id }).then(() => {
+    res.status(200).send(`User account ${user._id} deleted.`);
+  });
+});
+
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
 });

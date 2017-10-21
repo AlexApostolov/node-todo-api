@@ -382,3 +382,26 @@ describe('DELETE /users/me/token', () => {
       });
   });
 });
+
+// describe('DELETE /users/me/account', () => {
+//   it('should remove signed in user from database', done => {
+//     request(app)
+//       .delete('/users/me/account')
+//       // Sign in as second user in DB to delete second user account
+//       .set({ 'x-auth': users[1].tokens[0].token })
+//       .expect(200)
+//       .end((err, res) => {
+//         if (err) {
+//           return done(err);
+//         }
+//
+//         User.find()
+//           .then(users => {
+//             console.log(users);
+//             expect(users.length + 1).toBe(1);
+//             done();
+//           })
+//           .catch(e => done(e));
+//       });
+//   });
+// });
