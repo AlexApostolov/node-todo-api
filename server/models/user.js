@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const _ = require('lodash');
 // bcrypt is a one-way hashing algorithm (can't get original value back) that salts automatically
 const bcrypt = require('bcryptjs');
+// Tokens expire in 30 days
+const TOKENTIME = 60 * 60 * 24 * 30;
 
 const UserSchema = new mongoose.Schema({
   email: {
@@ -63,7 +65,9 @@ UserSchema.methods.generateAuthToken = function() {
   // Create a hash and pass a data object to be signed, and a secret to salt the hash
   const token = jwt
     // The data ObjectID is passed as a string value using toHexString MongoDB method, & 'auth' property value
-    .sign({ _id: user._id.toHexString(), access }, process.env.JWT_SECRET);
+    .sign({ _id: user._id.toHexString(), access }, process.env.JWT_SECRET, {
+      expiresIn: TOKENTIME
+    });
   // Get back string token with .toString(); chained on isn't necessary here because jwt.sign does that for us
 
   // tokens is an empty array by default, so update the local user model
